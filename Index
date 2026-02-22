@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Reading</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #F5EFE0;
+    --parchment-dark: #EDE3CC;
+    --parchment-deeper: #E0D4B8;
+    --ink: #2C2416;
+    --ink-mid: #5C4E35;
+    --ink-light: #9C8E72;
+    --ink-faint: #C8BAAA;
+    --accent: #8B3A2A;
+    --accent-soft: #C4705C;
+    --fiction-hue: #3A5A8B;
+    --nonfiction-hue: #3A7A4A;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--parchment);
+    color: var(--ink);
+    min-height: 100vh;
+    /* subtle paper texture via repeating gradient */
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 28px,
+        rgba(140,120,80,0.04) 28px,
+        rgba(140,120,80,0.04) 29px
+      );
+  }
+
+  /* ── HEADER ── */
+  header {
+    border-bottom: 1px solid var(--parchment-deeper);
+    padding: 3rem 2rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .header-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    line-height: 1;
+  }
+  header h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .total-badge {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--ink-light);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* ── YEAR STATS ROW ── */
+  .year-stats {
+    display: flex;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+  }
+  .year-stat {
+    cursor: pointer;
+    transition: opacity 0.15s;
+    border-bottom: 2px solid transparent;
+    padding-bottom: 2px;
+  }
+  .year-stat:hover { opacity: 0.7; }
+  .year-stat.active { border-color: var(--accent); }
+  .year-stat .num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.9rem;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .year-stat .lbl {
+    font-size: 0.72rem;
+    color: var(--ink-light);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 1px;
+  }
+
+  /* ── CONTROLS ── */
+  .controls {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+    border-bottom: 1px solid var(--parchment-deeper);
+  }
+  .search-wrap {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+  }
+  .search-wrap input {
+    width: 100%;
+    padding: 0.55rem 1rem 0.55rem 2.2rem;
+    background: transparent;
+    border: 1px solid var(--ink-faint);
+    border-radius: 3px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-wrap input::placeholder { color: var(--ink-faint); }
+  .search-wrap input:focus { border-color: var(--ink-mid); }
+  .search-icon {
+    position: absolute; left: 0.7rem; top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8rem; color: var(--ink-faint); pointer-events: none;
+  }
+
+  .filter-group { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .pill {
+    padding: 0.38rem 0.9rem;
+    border: 1px solid var(--ink-faint);
+    border-radius: 2px;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--ink-mid);
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .pill:hover { border-color: var(--ink-mid); color: var(--ink); }
+  .pill.active-fiction { background: var(--fiction-hue); border-color: var(--fiction-hue); color: #fff; }
+  .pill.active-nonfiction { background: var(--nonfiction-hue); border-color: var(--nonfiction-hue); color: #fff; }
+  .pill.active-sub { background: var(--ink); border-color: var(--ink); color: var(--parchment); }
+  .pill.active-year { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ── MAIN ── */
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 2rem 4rem;
+  }
+
+  /* ── SECTION HEADINGS ── */
+  .section-heading {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    margin: 2.5rem 0 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .section-heading::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--parchment-deeper);
+  }
+  .section-heading .cat-count {
+    font-size: 0.68rem;
+    background: var(--parchment-deeper);
+    padding: 0.1rem 0.5rem;
+    border-radius: 20px;
+    color: var(--ink-mid);
+  }
+
+  /* ── BOOK GRID ── */
+  .book-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 1.2rem 1rem;
+  }
+
+  /* ── BOOK CARD ── */
+  .book-card {
+    display: flex;
+    flex-direction: column;
+    cursor: default;
+    transition: transform 0.18s ease;
+  }
+  .book-card:hover { transform: translateY(-3px); }
+
+  .cover-wrap {
+    width: 100%;
+    aspect-ratio: 2/3;
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 2px 3px 10px rgba(44,36,22,0.18), inset -1px 0 0 rgba(0,0,0,0.08);
+  }
+  .cover-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.3s;
+  }
+  .cover-wrap img.loading { opacity: 0; }
+  .cover-placeholder {
+    position: absolute; inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem;
+    text-align: center;
+  }
+  .cover-placeholder .ph-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: rgba(255,255,255,0.92);
+  }
+  .cover-placeholder .ph-author {
+    font-size: 0.58rem;
+    color: rgba(255,255,255,0.65);
+    margin-top: 0.3rem;
+    font-style: italic;
+  }
+
+  .book-info { margin-top: 0.5rem; }
+  .book-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--ink);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .book-year-tag {
+    font-size: 0.65rem;
+    color: var(--ink-faint);
+    margin-top: 0.2rem;
+    font-weight: 300;
+  }
+
+  /* ── NO RESULTS ── */
+  .no-results {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--ink-light);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-style: italic;
+  }
+
+  /* ── LOADING SKELETON ── */
+  @keyframes shimmer {
+    0% { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+  }
+  .skeleton {
+    background: linear-gradient(90deg, var(--parchment-dark) 25%, var(--parchment-deeper) 50%, var(--parchment-dark) 75%);
+    background-size: 800px 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 3px;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    header, .controls, main { padding-left: 1rem; padding-right: 1rem; }
+    .book-grid { grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); gap: 1rem 0.7rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <h1>My <em>Reading</em></h1>
+    <span class="total-badge" id="total-badge">— books</span>
+  </div>
+  <div class="year-stats" id="year-stats"></div>
+</header>
+
+<div class="controls">
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="search" placeholder="Search title or author…">
+  </div>
+  <div class="filter-group" id="type-filters">
+    <button class="pill active-sub" data-type="all">All</button>
+    <button class="pill" data-type="Fiction">Fiction</button>
+    <button class="pill" data-type="Non-Fiction">Non-Fiction</button>
+  </div>
+  <div class="filter-group" id="sub-filters"></div>
+  <div class="filter-group" id="year-filters"></div>
+</div>
+
+<main id="main"></main>
+
+<script>
+// ── BOOK DATA ──────────────────────────────────────────────────────────────
+// type: Fiction | Non-Fiction
+// sub: genre/category
+// author: used for placeholder & OL search
+// olSearch: optional override search string for Open Library
+
+const BOOKS = [
+  // ── 2026 ──
+  { title:"The Song of Achilles", author:"Madeline Miller", type:"Fiction", sub:"Mythology & Historical Fiction", year:2026 },
+  { title:"A Knight of the Seven Kingdoms", author:"George R.R. Martin", type:"Fiction", sub:"Fantasy", year:2026 },
+  { title:"When the Cranes Fly South", author:"Various", type:"Fiction", sub:"Literary Fiction", year:2026 },
+  { title:"There Are Rivers in the Sky", author:"Elif Shafak", type:"Fiction", sub:"Literary Fiction", year:2026 },
+  { title:"The Boy from the Sea", author:"Various", type:"Fiction", sub:"Literary Fiction", year:2026 },
+  { title:"The Advantage", author:"Patrick Lencioni", type:"Non-Fiction", sub:"Business & Leadership", year:2026 },
+
+  // ── 2025 ──
+  { title:"Priestdaddy", author:"Patricia Lockwood", type:"Non-Fiction", sub:"Memoir & Biography", year:2025 },
+  { title:"Magician", author:"Raymond E. Feist", type:"Fiction", sub:"Fantasy", year:2025 },
+  { title:"The Art of Captaincy", author:"Mike Brearley", type:"Non-Fiction", sub:"Sport & Leadership", year:2025 },
+  { title:"Invest & Wander", author:"Various", type:"Non-Fiction", sub:"Investing & Finance", year:2025 },
+  { title:"Perfect Hotel", author:"Various", type:"Fiction", sub:"Literary Fiction", year:2025 },
+  { title:"The Accidental Soldier", author:"Various", type:"Fiction", sub:"Historical Fiction", year:2025 },
+  { title:"The Raven Scholar", author:"Various", type:"Fiction", sub:"Fantasy", year:2025 },
+  { title:"Eurotrash", author:"Christian Kracht", type:"Fiction", sub:"Literary Fiction", year:2025 },
+  { title:"A Court of Thorns and Roses", author:"Sarah J. Maas", type:"Fiction", sub:"Fantasy", year:2025 },
+  { title:"The Ministry of Time", author:"Kaliane Bradley", type:"Fiction", sub:"Science Fiction", year:2025 },
+  { title:"Blue Sisters", author:"Coco Mellors", type:"Fiction", sub:"Literary Fiction", year:2025 },
+  { title:"The Qualified Sales Leader", author:"John McMahon", type:"Non-Fiction", sub:"Business & Leadership", year:2025 },
+  { title:"The Wizard of the Kremlin", author:"Giuliano da Empoli", type:"Fiction", sub:"Political Fiction", year:2025 },
+  { title:"Lost Souls Meet Under a Full Moon", author:"Various", type:"Fiction", sub:"Literary Fiction", year:2025 },
+  { title:"The Full Moon Coffee Shop", author:"Mai Mochizuki", type:"Fiction", sub:"Literary Fiction", year:2025 },
+  { title:"The Place of Tides", author:"James Rebanks", type:"Non-Fiction", sub:"Nature & Travel", year:2025 },
+  { title:"King of Capital", author:"David Carey", type:"Non-Fiction", sub:"Investing & Finance", year:2025 },
+  { title:"Wind and Truth", author:"Brandon Sanderson", type:"Fiction", sub:"Fantasy", year:2025 },
+  { title:"Our London Lives", author:"Various", type:"Fiction", sub:"Literary Fiction", year:2025 },
+  { title:"These Old Shades", author:"Georgette Heyer", type:"Fiction", sub:"Historical Fiction", year:2025 },
+  { title:"Henry V", author:"William Shakespeare", type:"Fiction", sub:"Drama & Classics", year:2025 },
+  { title:"The Founder's Survival Guide", author:"Various", type:"Non-Fiction", sub:"Business & Leadership", year:2025 },
+  { title:"Edgedancer", author:"Brandon Sanderson", type:"Fiction", sub:"Fantasy", year:2025 },
+  { title:"What We Can Know", author:"Various", type:"Non-Fiction", sub:"Philosophy & Psychology", year:2025 },
+
+  // ── 2024 ──
+  { title:"The Outsiders", author:"William Thorndike", type:"Non-Fiction", sub:"Investing & Finance", year:2024 },
+  { title:"No Rules Rules", author:"Reed Hastings", type:"Non-Fiction", sub:"Business & Leadership", year:2024 },
+  { title:"Surrounded by Idiots", author:"Thomas Erikson", type:"Non-Fiction", sub:"Philosophy & Psychology", year:2024 },
+  { title:"Eleven Rings", author:"Phil Jackson", type:"Non-Fiction", sub:"Sport & Leadership", year:2024 },
+  { title:"Hyperion", author:"Dan Simmons", type:"Fiction", sub:"Science Fiction", year:2024 },
+  { title:"The Fall of Hyperion", author:"Dan Simmons", type:"Fiction", sub:"Science Fiction", year:2024 },
+  { title:"I Will Teach You to Be Rich", author:"Ramit Sethi", type:"Non-Fiction", sub:"Investing & Finance", year:2024 },
+  { title:"Pachinko", author:"Min Jin Lee", type:"Fiction", sub:"Literary Fiction", year:2024 },
+  { title:"The Wisdom of the Bullfrog", author:"William McRaven", type:"Non-Fiction", sub:"Sport & Leadership", year:2024 },
+  { title:"The Diary of a CEO", author:"Steven Bartlett", type:"Non-Fiction", sub:"Business & Leadership", year:2024 },
+  { title:"The Davis Dynasty", author:"John Rothchild", type:"Non-Fiction", sub:"Investing & Finance", year:2024 },
+  { title:"The Way of the Champion", author:"Jerry Lynch", type:"Non-Fiction", sub:"Sport & Leadership", year:2024 },
+  { title:"The Ferryman", author:"Justin Cronin", type:"Fiction", sub:"Science Fiction", year:2024 },
+  { title:"The Bee Sting", author:"Paul Murray", type:"Fiction", sub:"Literary Fiction", year:2024 },
+  { title:"Pompeii", author:"Robert Harris", type:"Fiction", sub:"Historical Fiction", year:2024 },
+  { title:"The Demon of Unrest", author:"Erik Larson", type:"Non-Fiction", sub:"History & Politics", year:2024 },
+  { title:"Collective Intelligence", author:"Various", type:"Non-Fiction", sub:"Business & Leadership", year:2024 },
+  { title:"The Book Burners Fall", author:"Various", type:"Fiction", sub:"Literary Fiction", year:2024 },
+  { title:"Who: Solve Your #1 Problem", author:"Geoff Smart", type:"Non-Fiction", sub:"Business & Leadership", year:2024 },
+  { title:"The Light Years", author:"R.W.W. Greene", type:"Fiction", sub:"Science Fiction", year:2024 },
+  { title:"The Trees", author:"Percival Everett", type:"Fiction", sub:"Literary Fiction", year:2024 },
+  { title:"High Vaultage", author:"Various", type:"Fiction", sub:"Fantasy", year:2024 },
+  { title:"Calypso", author:"David Sedaris", type:"Non-Fiction", sub:"Memoir & Biography", year:2024 },
+  { title:"The Undoing Project", author:"Michael Lewis", type:"Non-Fiction", sub:"Philosophy & Psychology", year:2024 },
+  { title:"This is Strategy", author:"Seth Godin", type:"Non-Fiction", sub:"Business & Leadership", year:2024 },
+  { title:"The Coaching Habit", author:"Michael Bungay Stanier", type:"Non-Fiction", sub:"Business & Leadership", year:2024 },
+
+  // ── 2023 ──
+  { title:"She and Her Cat", author:"Makoto Shinkai", type:"Fiction", sub:"Literary Fiction", year:2023 },
+  { title:"The Captain Class", author:"Sam Walker", type:"Non-Fiction", sub:"Sport & Leadership", year:2023 },
+  { title:"Illuminations", author:"Various", type:"Fiction", sub:"Literary Fiction", year:2023 },
+  { title:"The Ink Black Heart", author:"Robert Galbraith", type:"Fiction", sub:"Crime & Thriller", year:2023 },
+  { title:"The Shepherd's Life", author:"James Rebanks", type:"Non-Fiction", sub:"Nature & Travel", year:2023 },
+  { title:"Demon Copperhead", author:"Barbara Kingsolver", type:"Fiction", sub:"Literary Fiction", year:2023 },
+  { title:"Blue Blood", author:"Various", type:"Non-Fiction", sub:"Sport & Leadership", year:2023 },
+  { title:"Digital Minimalism", author:"Cal Newport", type:"Non-Fiction", sub:"Philosophy & Psychology", year:2023 },
+  { title:"Uncommon Type", author:"Tom Hanks", type:"Fiction", sub:"Short Stories", year:2023 },
+  { title:"Talking to Strangers", author:"Malcolm Gladwell", type:"Non-Fiction", sub:"Philosophy & Psychology", year:2023 },
+  { title:"The Old Man and the Sea", author:"Ernest Hemingway", type:"Fiction", sub:"Drama & Classics", year:2023 },
+  { title:"What You Do Is Who You Are", author:"Ben Horowitz", type:"Non-Fiction", sub:"Business & Leadership", year:2023 },
+  { title:"The Hard Thing About Hard Things", author:"Ben Horowitz", type:"Non-Fiction", sub:"Business & Leadership", year:2023 },
+  { title:"A Month in the Country", author:"J.L. Carr", type:"Fiction", sub:"Literary Fiction", year:2023 },
+  { title:"Measure What Matters", author:"John Doerr", type:"Non-Fiction", sub:"Business & Leadership", year:2023 },
+  { title:"Your Invisible Network", author:"Michael Melcher", type:"Non-Fiction", sub:"Business & Leadership", year:2023 },
+  { title:"Outlive", author:"Peter Attia", type:"Non-Fiction", sub:"Health & Wellbeing", year:2023 },
+  { title:"The Wager", author:"David Grann", type:"Non-Fiction", sub:"History & Politics", year:2023 },
+  { title:"Designing Your Life", author:"Bill Burnett", type:"Non-Fiction", sub:"Philosophy & Psychology", year:2023 },
+  { title:"The Hundred-Year-Old Man Who Climbed Out the Window", author:"Jonas Jonasson", type:"Fiction", sub:"Comedy & Satire", year:2023 },
+  { title:"The Circadian Code", author:"Satchin Panda", type:"Non-Fiction", sub:"Health & Wellbeing", year:2023 },
+  { title:"The Almanack of Naval Ravikant", author:"Eric Jorgenson", type:"Non-Fiction", sub:"Philosophy & Psychology", year:2023 },
+  { title:"Playing to Win", author:"A.G. Lafley", type:"Non-Fiction", sub:"Business & Leadership", year:2023 },
+  { title:"The Poisonwood Bible", author:"Barbara Kingsolver", type:"Fiction", sub:"Literary Fiction", year:2023 },
+  { title:"Call Sign Chaos", author:"Jim Mattis", type:"Non-Fiction", sub:"History & Politics", year:2023 },
+  { title:"Lonesome Dove", author:"Larry McMurtry", type:"Fiction", sub:"Historical Fiction", year:2023 },
+  { title:"Why Buddhism is True", author:"Robert Wright", type:"Non-Fiction", sub:"Philosophy & Psychology", year:2023 },
+  { title:"The Snow Leopard", author:"Peter Matthiessen", type:"Non-Fiction", sub:"Nature & Travel", year:2023 },
+  { title:"Start With Why", author:"Simon Sinek", type:"Non-Fiction", sub:"Business & Leadership", year:2023 },
+  { title:"Excellent Advice for Living", author:"Kevin Kelly", type:"Non-Fiction", sub:"Philosophy & Psychology", year:2023 },
+  { title:"The Lean Startup", author:"Eric Ries", type:"Non-Fiction", sub:"Business & Leadership", year:2023 },
+  { title:"Zorba the Greek", author:"Nikos Kazantzakis", type:"Fiction", sub:"Drama & Classics", year:2023 },
+  { title:"The Wolf Den", author:"Elodie Harper", type:"Fiction", sub:"Historical Fiction", year:2023 },
+  { title:"Rapport", author:"Emily Alison", type:"Non-Fiction", sub:"Philosophy & Psychology", year:2023 },
+  { title:"Alchemy", author:"Rory Sutherland", type:"Non-Fiction", sub:"Business & Leadership", year:2023 },
+  { title:"The Predators' Ball", author:"Connie Bruck", type:"Non-Fiction", sub:"Investing & Finance", year:2023 },
+  { title:"The List", author:"Various", type:"Fiction", sub:"Crime & Thriller", year:2023 },
+  { title:"The Fund", author:"Rob Copeland", type:"Non-Fiction", sub:"Investing & Finance", year:2023 },
+  { title:"Be Useful", author:"Arnold Schwarzenegger", type:"Non-Fiction", sub:"Memoir & Biography", year:2023 },
+  { title:"Murtagh", author:"Christopher Paolini", type:"Fiction", sub:"Fantasy", year:2023 },
+  { title:"The Passenger", author:"Cormac McCarthy", type:"Fiction", sub:"Literary Fiction", year:2023 },
+
+  // ── 2022 ──
+  { title:"Waypoints", author:"Sam Heughan", type:"Non-Fiction", sub:"Memoir & Biography", year:2022 },
+  { title:"Forbidden Healing", author:"Various", type:"Non-Fiction", sub:"Health & Wellbeing", year:2022 },
+  { title:"Life and How to Survive It", author:"Robin Skynner", type:"Non-Fiction", sub:"Philosophy & Psychology", year:2022 },
+  { title:"Winners", author:"Alastair Campbell", type:"Non-Fiction", sub:"Sport & Leadership", year:2022 },
+  { title:"Making It Happen", author:"Bob Aish", type:"Non-Fiction", sub:"Business & Leadership", year:2022 },
+  { title:"Nobody Will Shoot You If They Make Them Laugh", author:"Various", type:"Non-Fiction", sub:"Memoir & Biography", year:2022 },
+  { title:"The Dream Key", author:"Various", type:"Fiction", sub:"Literary Fiction", year:2022 },
+  { title:"The Paper Palace", author:"Miranda Cowley Heller", type:"Fiction", sub:"Literary Fiction", year:2022 },
+  { title:"22 Immutable Laws of Marketing", author:"Al Ries", type:"Non-Fiction", sub:"Business & Leadership", year:2022 },
+  { title:"Tomorrow, and Tomorrow, and Tomorrow", author:"Gabrielle Zevin", type:"Fiction", sub:"Literary Fiction", year:2022 },
+  { title:"Lessons in Chemistry", author:"Bonnie Garmus", type:"Fiction", sub:"Literary Fiction", year:2022 },
+  { title:"The Dark Ship", author:"Various", type:"Fiction", sub:"Historical Fiction", year:2022 },
+  { title:"How High We Go in the Dark", author:"Sequoia Nagamatsu", type:"Fiction", sub:"Science Fiction", year:2022 },
+  { title:"Vagabonds!", author:"Hao Jingfang", type:"Fiction", sub:"Science Fiction", year:2022 },
+  { title:"Death and the Penguin", author:"Andrey Kurkov", type:"Fiction", sub:"Comedy & Satire", year:2022 },
+  { title:"Babel", author:"R.F. Kuang", type:"Fiction", sub:"Fantasy", year:2022 },
+  { title:"Venomous Lumpsucker", author:"Ned Beauman", type:"Fiction", sub:"Science Fiction", year:2022 },
+  { title:"The Push", author:"Ashley Audrain", type:"Fiction", sub:"Literary Fiction", year:2022 },
+  { title:"The Satsuma Complex", author:"Bob Mortimer", type:"Fiction", sub:"Crime & Thriller", year:2022 },
+  { title:"Two for Joy", author:"Various", type:"Fiction", sub:"Literary Fiction", year:2022 },
+  { title:"The Boy and the Dog", author:"Seishu Hase", type:"Fiction", sub:"Literary Fiction", year:2022 },
+];
+
+// ── COLOUR PALETTES for placeholders (per sub-category) ──────────────────
+const SUB_COLORS = {
+  "Fantasy":                  ["#3B2F5E","#6B4FA0"],
+  "Science Fiction":          ["#1A2E4A","#2E5B8A"],
+  "Literary Fiction":         ["#2C3E2D","#4A6741"],
+  "Historical Fiction":       ["#4A3020","#8B5E3C"],
+  "Mythology & Historical Fiction": ["#5C2A2A","#8B4040"],
+  "Crime & Thriller":         ["#1A1A2E","#4A4A7A"],
+  "Political Fiction":        ["#2E2E1A","#6B6B3A"],
+  "Comedy & Satire":          ["#4A2C1A","#8B6040"],
+  "Short Stories":            ["#2A3A2A","#507050"],
+  "Drama & Classics":         ["#3A2A1A","#7A5A3A"],
+  "Business & Leadership":    ["#1A2A1A","#3A5A3A"],
+  "Investing & Finance":      ["#1A2A2A","#2A5A4A"],
+  "Sport & Leadership":       ["#2A1A1A","#6A3A2A"],
+  "Memoir & Biography":       ["#2A2A3A","#5A5A7A"],
+  "Philosophy & Psychology":  ["#2A1A2A","#6A4A6A"],
+  "Health & Wellbeing":       ["#1A2A2A","#3A6A5A"],
+  "History & Politics":       ["#2A1A1A","#5A3A2A"],
+  "Nature & Travel":          ["#1A2A1A","#3A6A3A"],
+};
+function subColor(sub) {
+  return SUB_COLORS[sub] || ["#2A2A2A","#5A5A5A"];
+}
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let filterType = "all";
+let filterSub  = "all";
+let filterYear = "all";
+let searchQ    = "";
+
+// ── DERIVED DATA ──────────────────────────────────────────────────────────
+const allYears = [...new Set(BOOKS.map(b => b.year))].sort((a,b)=>b-a);
+const allSubs  = [...new Set(BOOKS.map(b => b.sub))].sort();
+
+function getFiltered() {
+  return BOOKS.filter(b => {
+    if (filterType !== "all" && b.type !== filterType) return false;
+    if (filterSub  !== "all" && b.sub  !== filterSub)  return false;
+    if (filterYear !== "all" && b.year !== Number(filterYear)) return false;
+    if (searchQ && !b.title.toLowerCase().includes(searchQ) && !b.author.toLowerCase().includes(searchQ)) return false;
+    return true;
+  });
+}
+
+// ── COVER CACHE ───────────────────────────────────────────────────────────
+const coverCache = {}; // title → url | "none"
+
+async function fetchCoverId(title, author) {
+  const key = title.toLowerCase();
+  if (coverCache[key] !== undefined) return coverCache[key];
+  coverCache[key] = "loading";
+  try {
+    const q = encodeURIComponent(title);
+    const res = await fetch(`https://openlibrary.org/search.json?title=${q}&limit=3&fields=cover_i,title`);
+    const data = await res.json();
+    const doc = data.docs?.find(d => d.cover_i);
+    if (doc?.cover_i) {
+      coverCache[key] = `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`;
+    } else {
+      coverCache[key] = "none";
+    }
+  } catch(e) {
+    coverCache[key] = "none";
+  }
+  return coverCache[key];
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function bookCardHTML(b, idx) {
+  const [c1, c2] = subColor(b.sub);
+  const initials = b.title.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  return `<div class="book-card" data-idx="${idx}">
+    <div class="cover-wrap" style="background: linear-gradient(160deg, ${c1}, ${c2});">
+      <div class="cover-placeholder">
+        <div class="ph-title">${b.title}</div>
+        <div class="ph-author">${b.author}</div>
+      </div>
+      <img class="loading" src="" alt="${b.title}" data-title="${b.title}" data-author="${b.author}" loading="lazy">
+    </div>
+    <div class="book-info">
+      <div class="book-title">${b.title}</div>
+      <div class="book-year-tag">${b.year}</div>
+    </div>
+  </div>`;
+}
+
+function groupedHTML(books) {
+  if (!books.length) return `<div class="no-results">No books match your filters.</div>`;
+
+  // Group by type → sub
+  const grouped = {};
+  books.forEach(b => {
+    if (!grouped[b.type]) grouped[b.type] = {};
+    if (!grouped[b.type][b.sub]) grouped[b.type][b.sub] = [];
+    grouped[b.type][b.sub].push(b);
+  });
+
+  // When filtering by a single sub or year, group differently — just one flat grid
+  const typeKeys = Object.keys(grouped).sort((a,b) => a==="Fiction"?-1:1);
+  let html = "";
+  typeKeys.forEach(type => {
+    const subs = Object.keys(grouped[type]).sort();
+    subs.forEach(sub => {
+      const items = grouped[type][sub];
+      html += `<div class="section-heading">${type} · ${sub} <span class="cat-count">${items.length}</span></div>`;
+      html += `<div class="book-grid">`;
+      items.forEach((b, i) => {
+        const globalIdx = BOOKS.indexOf(b);
+        html += bookCardHTML(b, globalIdx);
+      });
+      html += `</div>`;
+    });
+  });
+  return html;
+}
+
+function render() {
+  const filtered = getFiltered();
+  document.getElementById("total-badge").textContent =
+    `${filtered.length} book${filtered.length !== 1 ? "s" : ""}`;
+  document.getElementById("main").innerHTML = groupedHTML(filtered);
+  lazyLoadCovers();
+  updateSubFilters();
+}
+
+// ── LAZY COVER LOADING ────────────────────────────────────────────────────
+function lazyLoadCovers() {
+  const imgs = document.querySelectorAll('.cover-wrap img[data-title]');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(async entry => {
+      if (!entry.isIntersecting) return;
+      const img = entry.target;
+      const title = img.dataset.title;
+      const author = img.dataset.author;
+      io.unobserve(img);
+      const url = await fetchCoverId(title, author);
+      if (url && url !== "none" && url !== "loading") {
+        img.src = url;
+        img.onload = () => {
+          img.classList.remove("loading");
+          // hide placeholder once real cover loads
+          const ph = img.parentElement.querySelector('.cover-placeholder');
+          if (ph) ph.style.opacity = "0";
+        };
+        img.onerror = () => { img.remove(); };
+      } else {
+        img.remove();
+      }
+    });
+  }, { rootMargin: "200px" });
+  imgs.forEach(img => io.observe(img));
+}
+
+// ── CONTROLS ──────────────────────────────────────────────────────────────
+function buildYearStats() {
+  const wrap = document.getElementById("year-stats");
+  wrap.innerHTML = allYears.map(y => {
+    const n = BOOKS.filter(b=>b.year===y).length;
+    return `<div class="year-stat${filterYear==y?" active":""}" data-year="${y}">
+      <div class="num">${n}</div>
+      <div class="lbl">${y}</div>
+    </div>`;
+  }).join("");
+  wrap.querySelectorAll('.year-stat').forEach(el => {
+    el.addEventListener('click', () => {
+      filterYear = filterYear == el.dataset.year ? "all" : el.dataset.year;
+      buildYearStats();
+      buildYearFilterPills();
+      render();
+    });
+  });
+}
+
+function buildTypeFilters() {
+  document.getElementById("type-filters").querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterType = btn.dataset.type;
+      filterSub = "all";
+      document.querySelectorAll('#type-filters .pill').forEach(b => {
+        b.className = 'pill';
+        if (b.dataset.type === filterType) {
+          b.className = 'pill active-sub';
+        }
+      });
+      updateSubFilters();
+      render();
+    });
+  });
+}
+
+function updateSubFilters() {
+  const wrap = document.getElementById("sub-filters");
+  // Show sub-filters only when a type is selected
+  const relevantSubs = filterType === "all"
+    ? []
+    : [...new Set(BOOKS.filter(b=>b.type===filterType).map(b=>b.sub))].sort();
+
+  if (!relevantSubs.length) { wrap.innerHTML = ""; return; }
+
+  wrap.innerHTML = relevantSubs.map(s =>
+    `<button class="pill${filterSub===s?" active-sub":""}" data-sub="${s}">${s}</button>`
+  ).join("");
+  wrap.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterSub = filterSub === btn.dataset.sub ? "all" : btn.dataset.sub;
+      updateSubFilters();
+      render();
+    });
+  });
+}
+
+function buildYearFilterPills() {
+  const wrap = document.getElementById("year-filters");
+  wrap.innerHTML = allYears.map(y =>
+    `<button class="pill${filterYear==y?" active-year":""}" data-year="${y}">${y}</button>`
+  ).join("");
+  wrap.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterYear = filterYear == btn.dataset.year ? "all" : btn.dataset.year;
+      buildYearStats();
+      buildYearFilterPills();
+      render();
+    });
+  });
+}
+
+document.getElementById("search").addEventListener("input", e => {
+  searchQ = e.target.value.toLowerCase().trim();
+  render();
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+buildYearStats();
+buildTypeFilters();
+buildYearFilterPills();
+render();
+</script>
+</body>
+</html>
